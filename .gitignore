@@ -1,3 +1,4 @@
+*.filtergraph
 .DS_Store
 .vs
 .vscode
