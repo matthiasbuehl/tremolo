@@ -22,11 +22,14 @@ public:
     // for each frame
     for (const auto frameIndex : std::views::iota(0, buffer.getNumSamples())) {
       // generate the LFO value
+      // lfo values are between -1 and 1
       const auto lfoVal = lfo.processSample(0.f);
+      // put lfo values between 0 and 1
+      const auto lfoValUniPolar = (lfoVal + 1.f) * .5f;
 
       // calculate the modulation value
       constexpr auto modulationDepth = .4f;
-      const auto modulationValue = lfoVal * modulationDepth + 1.f; 
+      const auto modulationValue = 1.f - lfoValUniPolar * modulationDepth;
 
       // for each channel sample in the frame
       for (const auto channelIndex :
