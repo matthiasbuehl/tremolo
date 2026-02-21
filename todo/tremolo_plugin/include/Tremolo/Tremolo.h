@@ -3,8 +3,20 @@
 namespace tremolo {
 class Tremolo {
 public:
+  enum class WaveForm : size_t {
+    sine = 0,
+    triangle = 1
+  };
+
   Tremolo() {
-    lfo.setFrequency(5.f, true);
+    for (auto& lfo : lfos) {
+      lfo.setFrequency(5.f, true);
+    }
+  }
+
+  void setCurrentWaveForm(WaveForm wf) {
+    jassert(wf == WaveForm::sine || wf == WaveForm::triangle);
+    nextWaveForm = wf;
   }
 
   void prepare(double sampleRate, int expectedMaxFramesPerBlock) {
@@ -13,17 +25,20 @@ public:
       .maximumBlockSize = static_cast<juce::uint32>(expectedMaxFramesPerBlock),
       .numChannels = juce::uint32{1},
     };
-    
-    lfo.prepare(spec);
-    lfo.setFrequency(5.f);
+
+    for (auto& lfo : lfos) {
+      lfo.prepare(spec);
+    }
   }
 
   void process(juce::AudioBuffer<float>& buffer) noexcept {
+    updateWaveForm();
+
     // for each frame
     for (const auto frameIndex : std::views::iota(0, buffer.getNumSamples())) {
       // generate the LFO value
       // lfo values are between -1 and 1
-      const auto lfoVal = lfo.processSample(0.f);
+      const auto lfoVal = getNextLfoValue();
       // put lfo values between 0 and 1
       const auto lfoValUniPolar = (lfoVal + 1.f) * .5f;
 
@@ -47,11 +62,34 @@ public:
   }
 
   void reset() noexcept {
-    lfo.reset();
+    for (auto& lfo : lfos) {
+      lfo.reset();
+    }
+  }
+
+  static float triangle(float phase) noexcept {
+    return std::abs(2 * phase / juce::MathConstants<float>::pi) - 1.f;
   }
 
 private:
   // You should put class members and private functions here
-  juce::dsp::Oscillator<float>lfo {[] (auto phase) { return std::sin(phase); }};
+  WaveForm currentWaveForm = WaveForm::triangle;
+  WaveForm nextWaveForm = currentWaveForm;
+  
+  std::array<juce::dsp::Oscillator<float>, 2> lfos {
+    juce::dsp::Oscillator<float> { [] (auto phase) { return std::sin(phase); } },
+    juce::dsp::Oscillator<float> { triangle }
+  };
+
+  float getNextLfoValue() {
+    return lfos[juce::toUnderlyingType(currentWaveForm)].processSample(0.f);
+  }
+
+  void updateWaveForm() {
+    if (currentWaveForm == nextWaveForm) return;
+
+    currentWaveForm = nextWaveForm;
+  }
+
 };
 }  // namespace tremolo
