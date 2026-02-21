@@ -3,7 +3,7 @@
 namespace tremolo {
 class Tremolo {
 public:
-  enum class WaveForm : size_t {
+  enum class LfoWaveform : size_t {
     sine = 0,
     triangle = 1
   };
@@ -14,8 +14,8 @@ public:
     }
   }
 
-  void setCurrentWaveForm(WaveForm wf) {
-    jassert(wf == WaveForm::sine || wf == WaveForm::triangle);
+  void setLfoWaveform(LfoWaveform wf) {
+    jassert(wf == LfoWaveform::sine || wf == LfoWaveform::triangle);
     nextWaveForm = wf;
   }
 
@@ -73,8 +73,8 @@ public:
 
 private:
   // You should put class members and private functions here
-  WaveForm currentWaveForm = WaveForm::triangle;
-  WaveForm nextWaveForm = currentWaveForm;
+  LfoWaveform currentWaveForm = LfoWaveform::triangle;
+  LfoWaveform nextWaveForm = currentWaveForm;
   
   std::array<juce::dsp::Oscillator<float>, 2> lfos {
     juce::dsp::Oscillator<float> { [] (auto phase) { return std::sin(phase); } },
